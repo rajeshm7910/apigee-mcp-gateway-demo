@@ -1,0 +1,11 @@
+mcp 
+mcp[cli]
+anthropic
+httpx
+pyyaml
+uvicorn
+aiohttp
+google-adk
+gunicorn
+fastmcp
+uvicorn
