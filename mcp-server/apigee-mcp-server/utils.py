@@ -224,7 +224,7 @@ def parse_proxy_xml(xml_content: str) -> ProxyInfo:
     return ProxyInfo(base_path=base_path, flows=flows)
 
 
-def create_openapi_spec(proxy_name: str):
+def proxy_spec_for_mcp(proxy_name: str):
     try:
         org = os.getenv("APIGEE_ORG")
         env = os.getenv("APIGEE_ENV")
@@ -247,11 +247,18 @@ def create_openapi_spec(proxy_name: str):
         # Parse proxy XML
         proxy_info = parse_proxy_xml(proxy_xml)
         print(f"Proxy Info: {proxy_info}")
-        
+
         # Generate OpenAPI specification
         openapi_spec = generate_openapi_spec(proxy_info)
         
-        return openapi_spec
+        return_json = {
+            "proxy_name": proxy_name,
+            "revision": revision,
+            "base_path": proxy_info.base_path,
+            "openapi_spec": openapi_spec
+        }
+
+        return return_json
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

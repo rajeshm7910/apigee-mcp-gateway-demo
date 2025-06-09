@@ -1,6 +1,6 @@
 import httpx
 from fastmcp import FastMCP
-from utils import create_openapi_spec
+from utils import proxy_spec_for_mcp
 from dotenv import load_dotenv
 import os
 from fastmcp.server.openapi import RouteMap, MCPType
@@ -8,13 +8,19 @@ from fastmcp.server.openapi import RouteMap, MCPType
 load_dotenv()
 
 # Create an HTTP client for your API
-base_url = os.getenv("PROXY_BASE_URL", "https://bap-amer-west-demo1.cs.apigee.net/retail/v1")
-client = httpx.AsyncClient(base_url=base_url)
+base_url = os.getenv("APIGEE_RUNTIME_URL", "https://bap-amer-west-demo1.cs.apigee.net")
+proxy_spec = proxy_spec_for_mcp("retail-v1")
+
 
 proxy_name = os.getenv("PROXY_NAME", "retail-v1");
 
 # Load your OpenAPI spec 
-openapi_spec =  create_openapi_spec(proxy_name)
+openapi_spec =  proxy_spec["openapi_spec"]
+base_path = proxy_spec["base_path"]
+base_url = base_url + base_path 
+
+client = httpx.AsyncClient(base_url=base_url)
+
 
 # Create the MCP server
 mcp = FastMCP.from_openapi(
