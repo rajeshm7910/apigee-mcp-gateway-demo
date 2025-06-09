@@ -47,6 +47,7 @@ def generate_openapi_spec(proxy_info: ProxyInfo) -> Dict:
     """Generate OpenAPI specification from proxy flows"""
     paths = {}
     
+    
     for flow in proxy_info.flows:
         if not flow.condition:
             continue
@@ -122,12 +123,15 @@ def generate_openapi_spec(proxy_info: ProxyInfo) -> Dict:
             
         paths[openapi_path][method.lower()] = operation
     
+    # Get API description from the first flow that has a description
+    api_description = next((flow.description for flow in proxy_info.flows if flow.description), "Generated from Apigee proxy flows")
+    
     openapi_spec = {
         "openapi": "3.0.0",
         "info": {
             "title": "API Specification",
             "version": "1.0.0",
-            "description": "Generated from Apigee proxy flows"
+            "description": api_description
         },
         "paths": paths,
         "servers": [
