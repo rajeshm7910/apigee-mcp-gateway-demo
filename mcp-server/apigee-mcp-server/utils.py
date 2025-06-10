@@ -11,6 +11,7 @@ import tempfile
 import shutil
 import json
 import asyncio
+import yaml
 from fastapi import HTTPException
 from google.auth import default
 from google.auth.transport.requests import Request
@@ -252,8 +253,17 @@ def proxy_spec_for_mcp(proxy_name: str):
         proxy_info = parse_proxy_xml(proxy_xml)
         print(f"Proxy Info: {proxy_info}")
 
-        # Generate OpenAPI specification
-        openapi_spec = generate_openapi_spec(proxy_info)
+        # Check if PROXY_OPENAPI_SPEC is specified in environment
+        openapi_spec_path = os.getenv("PROXY_OPENAPI_SPEC")
+        if openapi_spec_path:
+            try:
+                with open(openapi_spec_path, 'r') as f:
+                    openapi_spec = yaml.safe_load(f)
+            except (yaml.YAMLError, FileNotFoundError) as e:
+                raise HTTPException(status_code=500, detail=f"Failed to read or parse OpenAPI spec file: {str(e)}")
+        else:
+            # Generate OpenAPI specification from flows if not specified
+            openapi_spec = generate_openapi_spec(proxy_info)
         
         return_json = {
             "proxy_name": proxy_name,

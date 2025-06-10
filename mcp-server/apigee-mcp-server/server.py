@@ -9,10 +9,9 @@ load_dotenv()
 
 # Create an HTTP client for your API
 base_url = os.getenv("APIGEE_RUNTIME_URL", "https://bap-amer-west-demo1.cs.apigee.net")
-proxy_spec = proxy_spec_for_mcp("retail-v1")
-
-
 proxy_name = os.getenv("PROXY_NAME", "retail-v1");
+
+proxy_spec = proxy_spec_for_mcp(proxy_name)
 
 # Load your OpenAPI spec 
 openapi_spec =  proxy_spec["openapi_spec"]
@@ -31,6 +30,7 @@ mcp = FastMCP.from_openapi(
         RouteMap(mcp_type=MCPType.TOOL),
     ],
 )
+
 
 if __name__ == "__main__":
     mcp.run(transport="streamable-http",path="/mcp")
