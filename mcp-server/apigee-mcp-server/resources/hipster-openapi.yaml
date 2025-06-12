@@ -4,7 +4,7 @@ info:
   version: "1"
   description: Products API for Hipster Application
 servers:
-  - url: https://bap-amer-west-demo1.cs.apigee.net/v1/demo-hipster-api
+  - url: https://bap-amer-west-demo1.cs.apigee.net/v1/hipster-products-api
 security:
   - APIKeyQuery: []
 components:
