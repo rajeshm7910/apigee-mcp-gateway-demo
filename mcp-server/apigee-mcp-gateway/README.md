@@ -125,7 +125,7 @@ Apigee needs a service account to invoke the model armor. Create a service accou
    - Navigate to Apigee  UI → APIs → mcp-gateway-demo
    - Go to Target Servers
    - Update the `mcp` target server with your MCP service URL
-   - Update the `default` target server with your streaming service URL
+   - Update the `default` target server with your SSE service URL
 
 6. **Update the Model Armor Condiguration**:
 
