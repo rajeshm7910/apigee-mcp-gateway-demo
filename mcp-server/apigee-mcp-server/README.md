@@ -9,7 +9,7 @@ This server creates MCP tools by analyzing the flows defined in your Apigee prox
 - FastAPI-based MCP server implementation
 - Integration with Apigee API proxies
 - OpenAPI specification support
-- SSE (Server-Sent Events) transport for real-time communication
+- SSE (Server-Sent Events) and HTTP transport for real-time communication
 - Automatic tool generation from OpenAPI specifications
 
 ## Prerequisites
@@ -36,87 +36,25 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 ```bash
 pip install -r requirements.txt
 ```
-
 ## Configuration
 
-1. Authentication:
-   - Option 1: Generate a token using gcloud CLI:
-     ```bash
-     gcloud auth application-default login
-     ```
-   - Option 2: Set credentials file path in environment:
-     ```bash 
-     export GOOGLE_APPLICATION_CREDENTIALS="apigee-sa.json"
-     ```
-   - Option 3: Add credentials path to .env file:
-     ```env
-     GOOGLE_APPLICATION_CREDENTIALS=apigee-sa.json
-     ```
+1. Create/Update `.env` file with the following variables:
 
-2. Create/Update `.env` file with the following variables:
-```env
-# Organization name in Apigee
-export APIGEE_ORG="bap-amer-west-demo1"
-# Environment name in Apigee
-export APIGEE_ENV="default-dev"
-# Path to service account credentials file (uncomment if using)
-#export GOOGLE_APPLICATION_CREDENTIALS="./resources/apigee-sa.json"
-# Path to OpenAPI specification file for the API proxy. This is optional, if you don't specify it will read all conditional flows in Proxy and genereate spec for you.
 export PROXY_OPENAPI_SPEC="./resources/hipster-openapi.yaml"
-# Name of the API proxy to use
-export PROXY_NAME="Hipster-Products-API"
-#export PROXY_NAME=retail-v1
-
-# Base URL for the Apigee runtime environment
 export APIGEE_RUNTIME_URL="https://bap-amer-west-demo1.cs.apigee.net"
 
-```
 
 ## Usage
 
 Run the server using the provided script:
 ```bash
-./run.sh
+./local_start.sh {start|stop}
 ```
 
-Or run directly with Python:
-```bash
-python main.py --proxy-name "your-proxy-name" --base-url "your-runtime-url"
-```
-
-Command-line arguments:
-- `--proxy-name`: Name of the Apigee proxy to use (default: from PROXY_NAME env var)
-- `--base-url`: Base URL for the Apigee runtime (default: from APIGEE_RUNTIME_URL env var)
-- `--host`: Host to bind to (default: 0.0.0.0)
-- `--port`: Port to listen on (default: 8080)
-- `--access-token`: Access token for Apigee API authentication (optional)
-
-The server will start and expose:
-- SSE endpoint at `/sse`
-- Message handling at `/messages/`
-
-## Project Structure
-
-- `main.py` - Main server implementation with MCP and SSE integration
-- `utils.py` - Utility functions for proxy specification and MCP integration
-- `openapi_generator.py` - OpenAPI specification to MCP tools generator
-- `requirements.txt` - Project dependencies
-- `run.sh` - Convenience script for running the server
-- `apigee-sa.json` - Apigee service account credentials
 
 ## Dependencies
 
-- fastapi==0.104.1
-- uvicorn==0.24.0
-- pydantic==2.4.2
-- requests==2.31.0
-- google-auth==2.23.3
-- google-auth-oauthlib==1.1.0
-- google-auth-httplib2==0.1.1
-- fastmcp==0.1.0
-- pyyaml==6.0.1
-- python-dotenv==1.0.0
-- starlette==0.27.0
+- fastapi
 
 ## Contributing
 

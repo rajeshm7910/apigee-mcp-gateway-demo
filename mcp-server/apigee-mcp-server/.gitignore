@@ -1,3 +1,5 @@
 *.json
 *.pyc
-
+http_server.log
+sse_server.log
+venv/
