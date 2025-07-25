@@ -40,9 +40,10 @@ pip install -r requirements.txt
 
 1. Create/Update `.env` file with the following variables:
 
+```bash
 export PROXY_OPENAPI_SPEC="./resources/hipster-openapi.yaml"
 export APIGEE_RUNTIME_URL="https://bap-amer-west-demo1.cs.apigee.net"
-
+```
 
 ## Usage
 
