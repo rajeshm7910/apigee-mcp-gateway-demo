@@ -1,7 +1,8 @@
-# main.py
+# main_sse.py
 import argparse
 import asyncio
 import os
+import yaml
 from dotenv import load_dotenv
 from starlette.applications import Starlette
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -11,7 +12,6 @@ from mcp.server import Server
 from mcp.server.fastmcp import FastMCP
 from mcp.server.sse import SseServerTransport
 from starlette.requests import Request
-from utils import proxy_spec_for_mcp
 from openapi_generator import OpenAPIToolGenerator
 from typing import Optional
 from starlette.responses import Response
@@ -74,23 +74,29 @@ def create_starlette_app(mcp_server: Server, *, debug: bool = False) -> Starlett
         ],
     )
 
-async def setup_mcp_server(proxy_name: str, base_url: str, access_token: Optional[str] = None) -> FastMCP:
-    """Set up the MCP server with the given configuration."""
-    # Get proxy spec
-    proxy_spec = proxy_spec_for_mcp(proxy_name, access_token)
+async def setup_mcp_server(openapi_spec_path: str, base_url: str) -> FastMCP:
+    """Set up the MCP server and tool generator using a local OpenAPI spec file."""
     
-    # Extract OpenAPI spec and base path
-    openapi_spec = proxy_spec["openapi_spec"]
-    base_path = proxy_spec["base_path"]
-    full_base_url = base_url.rstrip('/') + base_path.rstrip('/')
+    # Load OpenAPI spec from file
+    try:
+        with open(openapi_spec_path, 'r') as f:
+            openapi_spec = yaml.safe_load(f)
+        print(f"Loaded OpenAPI spec from: {openapi_spec_path}")
+    except (yaml.YAMLError, FileNotFoundError) as e:
+        raise ValueError(f"Failed to read or parse OpenAPI spec file '{openapi_spec_path}': {e}")
     
-    print(f"Using base URL: {full_base_url}")
+    # Extract server name from OpenAPI spec
+    server_name = openapi_spec.get("info", {}).get("title", "MCP Server")
+    if not server_name or server_name == "MCP Server":
+        server_name = "Apigee MCP Server"
+    
+    print(f"Using base URL: {base_url}")
     
     # Create MCP server
-    mcp = FastMCP(f"{proxy_name} MCP Server")
+    mcp = FastMCP(server_name)
     
     # Create and run the OpenAPI tool generator with the spec dictionary and base URL
-    generator = OpenAPIToolGenerator(mcp, openapi_spec, base_url=full_base_url)
+    generator = OpenAPIToolGenerator(mcp, openapi_spec, base_url=base_url)
     await generator.generate_tools()
     
     return mcp
@@ -100,28 +106,28 @@ if __name__ == "__main__":
     load_dotenv()
     
     # Parse command line arguments
-    parser = argparse.ArgumentParser(description='Run an MCP server for Apigee proxy.')
-    parser.add_argument(
-        '--proxy-name',
-        default=os.getenv('PROXY_NAME', 'retail-v1'),
-        help='Name of the Apigee proxy to use'
-    )
-    parser.add_argument(
-        '--base-url',
-        default=os.getenv('APIGEE_RUNTIME_URL', 'https://bap-amer-west-demo1.cs.apigee.net'),
-        help='Base URL for the Apigee runtime'
-    )
+    parser = argparse.ArgumentParser(description='Run an MCP server for Apigee proxy with SSE transport.')
+    parser.add_argument('--openapi-spec', default=os.getenv('OPENAPI_SPEC_PATH', 'resources/hipster-openapi.yaml'), 
+                       help='Path to the OpenAPI specification file')
+    parser.add_argument('--base-url', default=os.getenv('APIGEE_PROXY_BASE_URL', 'https://bap-amer-west-demo1.cs.apigee.net'), 
+                       help='Base URL for the proxy API')
     parser.add_argument('--host', default='0.0.0.0', help='Host to bind to')
     parser.add_argument('--port', type=int, default=8080, help='Port to listen on')
-    parser.add_argument('--access-token', help='Access token for Apigee API authentication')
     args = parser.parse_args()
 
     # Set up MCP server
-    mcp = asyncio.run(setup_mcp_server(args.proxy_name, args.base_url, args.access_token))
+    mcp = asyncio.run(setup_mcp_server(args.openapi_spec, args.base_url))
     mcp_server = mcp._mcp_server
     
     # Create and run Starlette app
     starlette_app = create_starlette_app(mcp_server, debug=True)
     
-    print(f"\nServer '{args.proxy_name}' is ready. Starting Uvicorn on http://{args.host}:{args.port}")
+    print(f"\nSSE Server is ready. Starting Uvicorn on http://{args.host}:{args.port}")
+    print(f"Configuration:")
+    print(f"  OpenAPI Spec: {args.openapi_spec}")
+    print(f"  Base URL: {args.base_url}")
+    print(f"\nAvailable endpoints:")
+    print(f"  GET  /sse      - SSE connection endpoint")
+    print(f"  POST /messages/ - MCP message endpoint")
+    
     uvicorn.run(starlette_app, host=args.host, port=args.port)

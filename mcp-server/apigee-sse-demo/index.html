@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simple Streamlit-like Chat</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f6f6f6;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+    .chat-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      max-width: 500px;
+      margin: 40px auto 0 auto;
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      overflow: hidden;
+    }
+    .messages {
+      flex: 1;
+      padding: 20px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .message {
+      max-width: 80%;
+      padding: 12px 16px;
+      border-radius: 16px;
+      font-size: 1rem;
+      line-height: 1.4;
+      word-break: break-word;
+    }
+    .user {
+      align-self: flex-end;
+      background: #e6f0ff;
+      color: #1a237e;
+    }
+    .assistant {
+      align-self: flex-start;
+      background: #f1f8e9;
+      color: #33691e;
+    }
+    .input-area {
+      display: flex;
+      border-top: 1px solid #eee;
+      background: #fafafa;
+      padding: 12px;
+    }
+    .input-area input {
+      flex: 1;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 1rem;
+      outline: none;
+    }
+    .input-area button {
+      margin-left: 8px;
+      padding: 10px 18px;
+      background: #1976d2;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .input-area button:disabled {
+      background: #90caf9;
+      cursor: not-allowed;
+    }
+    .blinking-cursor {
+      display: inline-block;
+      width: 10px;
+      height: 1em;
+      background: none;
+      color: #33691e;
+      animation: blink 1s steps(1) infinite;
+      font-weight: bold;
+      font-size: 1.1em;
+      vertical-align: middle;
+    }
+    @keyframes blink {
+      0%, 50% { opacity: 1; }
+      51%, 100% { opacity: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div style="max-width:500px;margin:24px auto 0 auto;display:flex;align-items:center;gap:8px;">
+    <label for="apikey-input" style="font-size:0.95em;">API Key:</label>
+    <input type="text" id="apikey-input" placeholder="Enter API key (optional)" style="flex:1;padding:6px 10px;border-radius:6px;border:1px solid #ccc;font-size:1em;" />
+  </div>
+  <div class="chat-container">
+    <div class="messages" id="messages"></div>
+    <form class="input-area" id="chat-form">
+      <input type="text" id="chat-input" placeholder="Type your message..." autocomplete="off" required />
+      <button type="submit">Send</button>
+    </form>
+  </div>
+  <script>
+    const messagesDiv = document.getElementById('messages');
+    const chatForm = document.getElementById('chat-form');
+    const chatInput = document.getElementById('chat-input');
+
+    function addMessage(text, sender) {
+      const msg = document.createElement('div');
+      msg.className = `message ${sender}`;
+      msg.textContent = text;
+      messagesDiv.appendChild(msg);
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }
+
+    async function sendMessage(text) {
+      const apikeyInput = document.getElementById('apikey-input');
+      const apikey = apikeyInput.value.trim();
+      addMessage(text, 'user');
+      chatInput.value = '';
+      chatInput.disabled = true;
+      chatForm.querySelector('button').disabled = true;
+      let assistantMsg = document.createElement('div');
+      assistantMsg.className = 'message assistant';
+      let cursor = document.createElement('span');
+      cursor.className = 'blinking-cursor';
+      cursor.textContent = '|';
+      assistantMsg.appendChild(cursor);
+      messagesDiv.appendChild(assistantMsg);
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+      let fullText = '';
+      try {
+        let url = 'https://bap-amer-west-demo1.cs.apigee.net/apigee-sse-demo';
+        if (apikey) {
+          url += (url.includes('?') ? '&' : '?') + 'apikey=' + encodeURIComponent(apikey);
+        }
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'text/event-stream',
+          },
+          body: JSON.stringify({
+            contents: [
+              { parts: [ { text } ] }
+            ]
+          })
+        });
+        if (!response.ok) throw new Error('Network response was not ok');
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder('utf-8');
+        let buffer = '';
+        let done = false;
+        while (!done) {
+          const { value, done: doneReading } = await reader.read();
+          done = doneReading;
+          if (value) {
+            buffer += decoder.decode(value, { stream: true });
+            let lines = buffer.split(/\r?\n/);
+            buffer = lines.pop(); // last line may be incomplete
+            for (const line of lines) {
+              if (line.trim().length === 0) continue;
+              try {
+                let parsed = JSON.parse(line);
+                // Extract text from the event stream JSON
+                let reply = '';
+                if (
+                  parsed.candidates &&
+                  parsed.candidates[0] &&
+                  parsed.candidates[0].content &&
+                  parsed.candidates[0].content.parts &&
+                  parsed.candidates[0].content.parts[0] &&
+                  typeof parsed.candidates[0].content.parts[0].text === 'string'
+                ) {
+                  reply = parsed.candidates[0].content.parts[0].text;
+                }
+                fullText += reply;
+                assistantMsg.textContent = fullText;
+                assistantMsg.appendChild(cursor);
+                messagesDiv.scrollTop = messagesDiv.scrollHeight;
+              } catch (e) {
+                // Not JSON, just append raw data
+                fullText += line;
+                assistantMsg.textContent = fullText;
+                assistantMsg.appendChild(cursor);
+                messagesDiv.scrollTop = messagesDiv.scrollHeight;
+              }
+            }
+          }
+        }
+        // If there is any remaining buffer, try to parse it
+        if (buffer.trim().length > 0) {
+          try {
+            let parsed = JSON.parse(buffer);
+            let reply = '';
+            if (
+              parsed.candidates &&
+              parsed.candidates[0] &&
+              parsed.candidates[0].content &&
+              parsed.candidates[0].content.parts &&
+              parsed.candidates[0].content.parts[0] &&
+              typeof parsed.candidates[0].content.parts[0].text === 'string'
+            ) {
+              reply = parsed.candidates[0].content.parts[0].text;
+            }
+            fullText += reply;
+            assistantMsg.textContent = fullText;
+            assistantMsg.appendChild(cursor);
+          } catch (e) {
+            fullText += buffer;
+            assistantMsg.textContent = fullText;
+            assistantMsg.appendChild(cursor);
+          }
+        }
+        // Remove blinking cursor after stream is done
+        assistantMsg.removeChild(cursor);
+      } catch (err) {
+        assistantMsg.textContent = 'Error: ' + err.message;
+      } finally {
+        chatInput.disabled = false;
+        chatForm.querySelector('button').disabled = false;
+        chatInput.focus();
+      }
+    }
+
+    chatForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+      const text = chatInput.value.trim();
+      if (text) {
+        sendMessage(text);
+      }
+    });
+  </script>
+</body>
+</html>

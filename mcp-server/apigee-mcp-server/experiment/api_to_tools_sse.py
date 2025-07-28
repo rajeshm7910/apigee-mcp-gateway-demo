@@ -9,12 +9,12 @@ load_dotenv()
 
 # Get OpenAPI spec path/URL and base URL from environment
 openapi_spec_path = os.getenv("PROXY_OPENAPI_SPEC")
-base_url = os.getenv("APIGEE_RUNTIME_URL")
+base_url = os.getenv("APIGEE_BASE_PATH")
 
 if not openapi_spec_path:
     raise ValueError("PROXY_OPENAPI_SPEC environment variable is not set.")
 if not base_url:
-    raise ValueError("APIGEE_RUNTIME_URL environment variable is not set.")
+    raise ValueError("APIGEE_BASE_PATH environment variable is not set.")
 
 # Load the OpenAPI spec (from file or URL)
 if openapi_spec_path.startswith(("http://", "https://")):
@@ -41,8 +41,8 @@ mcp = FastMCP.from_openapi(
 
 if __name__ == "__main__":
     mcp.run(
-        transport="http",
+        transport="sse",
         host="127.0.0.1",
-        port=4200,
+        port=4201,
         log_level="debug"
     )
