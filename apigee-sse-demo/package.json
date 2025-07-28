@@ -1,0 +1,11 @@
+{
+  "name": "apigee-sse-demo-server",
+  "version": "1.0.0",
+  "description": "Simple static server for apigee-sse-demo",
+  "scripts": {
+    "start": "http-server -p 5200"
+  },
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  }
+} 
