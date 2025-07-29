@@ -17,6 +17,21 @@ This demo consists of three main components that work together to create a compr
 
 This folder contains the core MCP server that bridges Apigee APIs with AI models by converting API endpoints into MCP tools.
 
+#### Architecture
+
+```
+   ┌─────────────────┐    ┌─────────────────┐
+   │   Apigee MCP    │    │   MCP Server    │
+   |   Gateway       │◄──►│   (API Tools)   │    
+   └─────────────────┘    └─────────────────┘
+                              │
+                              ▼
+                       ┌─────────────────┐
+                       │   Apigee APIs   │
+                       └─────────────────┘
+```
+
+
 #### Subfolders:
 - **`apigee-api-to-mcp/`** - Main MCP server implementation
   - `main_http.py` - HTTP-based MCP server
@@ -43,6 +58,17 @@ This folder contains the core MCP server that bridges Apigee APIs with AI models
 
 This folder implements a complete MCP gateway solution using Apigee as the API gateway, providing enterprise-grade features like rate limiting, authentication, and monitoring.
 
+#### Architecture
+
+```
+   ┌─────────────────┐    ┌────────────────-┐
+   │   Apigee MCP    │    │   MCP Servers   │
+   |   Gateway       │◄──►│(Git/Jira/Custom)│    
+   └─────────────────┘    └─────────────────┘
+                              
+```
+
+
 #### Subfolders:
 - **`fastapi-sse-mcp/`** - FastAPI-based SSE MCP server
   - `app/` - FastAPI application code
@@ -60,7 +86,6 @@ This folder implements a complete MCP gateway solution using Apigee as the API g
   - `start_sse.sh` / `start_streaming.sh` - Service startup scripts
 
 **Key Features:**
-- Server-Sent Events (SSE) streaming
 - FastMCP streaming implementation
 - Apigee proxy with security policies
 - Model Armor integration for prompt sanitization
@@ -114,19 +139,7 @@ A simple web-based chat interface for testing the MCP streaming capabilities.
    npm start
    ```
 
-## Architecture
 
-```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Frontend      │    │   Apigee        │    │   MCP Server    │
-│   (Chat UI)     │◄──►│   Gateway       │◄──►│   (API Tools)   │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-                              │
-                              ▼
-                       ┌─────────────────┐
-                       │   Apigee APIs   │
-                       └─────────────────┘
-```
 
 ## Use Cases
 
